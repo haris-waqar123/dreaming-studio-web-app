@@ -1,0 +1,27 @@
+fastapi
+diffusers
+huggingface_hub
+torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+time
+rembg
+scipy
+uuid
+transformers
+speechbrain
+tensorflow_hub
+librosa
+faster-whisper
+pydub
+wavmark
+numpy
+eng_to_ipa
+inflect
+unidecode
+whisper-timestamped
+openai
+python-dotenv
+pypinyin
+cn2an
+jieba
+gradio
+langid

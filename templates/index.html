@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/x-icon" href="D:/Artificial Intelligence/Text to Image App/Text to Image Base/dreamShaper/templates/favicon.ico">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generation</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .navbar {
+            background-color: #333;
+            overflow: hidden;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .navbar a {
+            float: left;
+            display: block;
+            color: black; /* Default text color */
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+        }
+        .navbar a:hover {
+            background-color: white;
+            color: black; /* Hover text color */
+        }
+        .navbar a.active {
+            background-color: #0056b3; /* Active button background color */
+            color: #FFFFFF; /* Active button text color */
+            border-radius: 8px;
+        }
+        .form-container, .image-container {
+            display: none;
+        }
+        .form-container.active, .image-container.active {
+            display: block;
+        }
+        .overlay {
+            position: fixed; /* Overlay takes the whole screen */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000; /* Ensures overlay is above other content */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .circular-progress {
+            border: 6px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 6px solid #fff;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        h1, h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-input, button {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #003d82;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        @media (max-width: 768px) {
+            .form-container, .image-container {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navbar" style="display: flex; justify-content: center; background-color: white;">
+            <a href="/generate" id="generateBtn" class="{% if section == 'generate' %}active{% endif %}" style="margin-right: 2px;">Image Generation</a>
+            <a href="/background" id="backgroundBtn" class="{% if section == 'background' %}active{% endif %}" style="margin-left: 2px; margin-right: 2px;">Background Removal</a>
+        </div>
+    
+        <div class="form-container {% if section == 'generate' %}active{% endif %}" id="generate-section" style="display: {% if section == 'generate' %}block{% else %}none{% endif %};">
+            <h1>Generate Image from Prompt</h1>
+            <form action="/generate-image" method="post">
+                <input type="text" name="prompt" placeholder="Enter a prompt" class="form-input" value="{{ values.prompt | default('') }}" required>
+                <button type="submit">Generate</button>
+            </form>
+            {% if image_path_1 %}
+                <div class="image-container active">
+                    <img id= "resultImage" src="{{ image_path_1 }}" alt="Generated Image">
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="image-container {% if section == 'background' %}active{% endif %}" id="remove-background-section" style="display: {% if section == 'background' %}block{% else %}none{% endif %};">
+            <h1>Remove Background</h1>
+            <form action="/remove-background" method="post" enctype="multipart/form-data">
+                <input type="file" name="image" accept="image/*" class="form-input" required>
+                <button type="submit" class="button">Remove Background</button>
+            </form>
+            {% if image_path_2 %}
+                <div class="image-container active">
+                    <img id= "resultImage" src="{{ image_path_2 }}" alt="Generated Image">
+                </div>
+            {% endif %}
+        </div>
+        <div class="overlay" id="loadingOverlay" style="display:none;">
+            <div class="circular-progress"></div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Define section elements
+            const generateSection = document.getElementById("generate-section");
+            const removeBgSection = document.getElementById("remove-background-section");
+        
+            // Define button elements
+            const generateBtn = document.getElementById("generateBtn");
+            const backgroundBtn = document.getElementById("backgroundBtn");
+        
+            // Function to hide all sections and remove active class from all buttons
+            function hideAllSections() {
+                [generateSection, removeBgSection].forEach(section => section.style.display = "none");
+                [generateBtn, backgroundBtn].forEach(button => button.classList.remove("active"));
+            }
+        
+            // Function to set active section and button
+            function setActiveSection(activeSection, activeButton) {
+                hideAllSections();
+                activeSection.style.display = "block";
+                activeButton.classList.add("active");
+            }
+        
+            // Function to show loading overlay
+            function showLoadingOverlay() {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+            }
+        
+            // Function to hide loading overlay
+            function hideLoadingOverlay() {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        
+            // Event listener for generate button click
+            generateBtn.addEventListener('click', function(event) {
+                event.preventDefault(); // Prevent the default behavior of the link
+                setActiveSection(generateSection, generateBtn);
+                history.pushState({}, '', '/generate'); // Update the URL without reloading the page
+            });
+
+            // Event listener for background button click
+            backgroundBtn.addEventListener('click', function(event) {
+                event.preventDefault(); // Prevent the default behavior of the link
+                setActiveSection(removeBgSection, backgroundBtn);
+                history.pushState({}, '', '/background'); // Update the URL without reloading the page
+            });
+        
+            // Event listener for form submission to show loading overlay
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function() {
+                    showLoadingOverlay();
+                });
+            });
+
+            history.pushState({}, '', '/generate');
+        
+            // Hide the overlay when the window is loaded (after the form is submitted and the page is reloaded)
+            window.onload = hideLoadingOverlay;
+        });        
+    </script>
+</body>
+</html>
