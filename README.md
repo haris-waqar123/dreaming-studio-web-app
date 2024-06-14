@@ -1,8 +1,6 @@
 # Ai Features
 ### In this task, we created the following features of the Artificial Intelligence.
 ### - Image Generation
-### - Audio Generation
-### - Voice Cloning
 ### - Background Removal
 
 First to install required packages run the following command:
