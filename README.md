@@ -1,5 +1,5 @@
 # Ai Features
-### In this task, we created the following features of the Artificial Intelligence.
+### In this task, I've created the following features of the Artificial Intelligence.
 ### - Image Generation
 ### - Background Removal
 
